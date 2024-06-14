@@ -29,5 +29,6 @@ async fn main() -> io::Result<()> {
             .configure(general_routes)
             .configure(course_routes)
     };
+
     HttpServer::new(app).bind("127.0.0.1:3000")?.run().await
 }
