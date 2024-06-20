@@ -1,5 +1,6 @@
 use super::models::*;
 use super::state::*;
+use super::db_access::*;
 use actix_web::{web, HttpResponse};
 use chrono::Utc;
 
@@ -16,22 +17,8 @@ pub async fn post_new_course(
     app_state: web::Data<AppState>,
 ) -> HttpResponse {
     println!("Received new course");
-    let course_count_for_user = app_state
-        .courses
-        .lock()
-        .unwrap()
-        .clone()
-        .into_iter()
-        .filter(|course| course.tutor_id == new_course.tutor_id)
-        .count();
-    let new_course = Course {
-        tutor_id: new_course.tutor_id,
-        course_id: Some(course_count_for_user as i32 + 1),
-        course_name: new_course.course_name.clone(),
-        posted_time: Some(Utc::now().naive_utc()),
-    };
-    app_state.courses.lock().unwrap().push(new_course);
-    HttpResponse::Ok().json("Added course")
+    let course = post_new_course_db(&app_state.db, new_course.into()).await;
+    HttpResponse::Ok().json(course)
 }
 
 pub async fn get_courses_for_tutor(
@@ -39,19 +26,8 @@ pub async fn get_courses_for_tutor(
     params: web::Path<i32>,
 ) -> HttpResponse {
     let tutor_id = params.into_inner();
-    let filtered_courses = app_state
-        .courses
-        .lock()
-        .unwrap()
-        .clone()
-        .into_iter()
-        .filter(|course| course.tutor_id == tutor_id)
-        .collect::<Vec<Course>>();
-    if filtered_courses.len() > 0 {
-        HttpResponse::Ok().json(filtered_courses)
-    } else {
-        HttpResponse::Ok().json("No courses found for tutor".to_string())
-    }
+    let courses = get_courses_for_tutor_db(&app_state.db, tutor_id).await;
+    HttpResponse::Ok().json(courses)
 }
 
 pub async fn get_course_details(
@@ -59,19 +35,9 @@ pub async fn get_course_details(
     params: web::Path<(i32, i32)>,
 ) -> HttpResponse {
     let (tutor_id, course_id) = params.into_inner();
-    let selected_course = app_state
-        .courses
-        .lock()
-        .unwrap()
-        .clone()
-        .into_iter()
-        .find(|x| x.tutor_id == tutor_id && x.course_id == Some(course_id))
-        .ok_or("Course not found");
-    if let Ok(course) = selected_course {
+    let course = get_course_details_db(
+        &app_state.db, tutor_id, course_id).await;
         HttpResponse::Ok().json(course)
-    } else {
-        HttpResponse::Ok().json("Course not found".to_string())
-    }
 }
 
 #[cfg(test)]
@@ -123,8 +89,8 @@ mod tests {
             db: pool,
         });
         let new_course_msg = Course {
-            course_id: 1,
-            tutor_id: 1,
+            course_id: 3,
+            tutor_id: 2,
             course_name: "This is the next course".into(),
             posted_time: Some(NaiveDate::from_ymd(2020, 9, 17).and_hms(14, 01, 11)),
         };
