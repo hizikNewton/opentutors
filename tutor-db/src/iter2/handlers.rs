@@ -1,7 +1,7 @@
 use super::db_access::*;
-use super::models::*;
-use super::state::*;
 use super::errors::EzyTutorError;
+use super::state::*;
+use crate::models::course::CreateCourse;
 use actix_web::{web, HttpResponse};
 
 pub async fn health_check_handler(app_state: web::Data<AppState>) -> HttpResponse {
@@ -13,10 +13,10 @@ pub async fn health_check_handler(app_state: web::Data<AppState>) -> HttpRespons
 }
 
 pub async fn post_new_course(
-    new_course: web::Json<Course>,
+    new_course: web::Json<CreateCourse>,
     app_state: web::Data<AppState>,
 ) -> Result<HttpResponse, EzyTutorError> {
-    post_new_course_db(&app_state.db, new_course.into())
+    post_new_course_db(&app_state.db, new_course.try_into()?)
         .await
         .map(|course| HttpResponse::Ok().json(course))
 }
@@ -24,21 +24,21 @@ pub async fn post_new_course(
 pub async fn get_courses_for_tutor(
     app_state: web::Data<AppState>,
     params: web::Path<i32>,
-) -> HttpResponse {
+) -> Result<HttpResponse, EzyTutorError> {
     let tutor_id = params.into_inner();
-    let courses = get_courses_for_tutor_db(&app_state.db, tutor_id)
+    get_courses_for_tutor_db(&app_state.db, tutor_id)
         .await
-        .unwrap();
-    HttpResponse::Ok().json(courses)
+        .map(|courses| HttpResponse::Ok().json(courses))
 }
 
 pub async fn get_course_details(
     app_state: web::Data<AppState>,
     params: web::Path<(i32, i32)>,
-) -> HttpResponse {
+) -> Result<HttpResponse, EzyTutorError> {
     let (tutor_id, course_id) = params.into_inner();
-    let course = get_course_details_db(&app_state.db, tutor_id, course_id).await;
-    HttpResponse::Ok().json(course)
+    get_course_details_db(&app_state.db, tutor_id, course_id)
+        .await
+        .map(|course| HttpResponse::Ok().json(course))
 }
 
 #[cfg(test)]

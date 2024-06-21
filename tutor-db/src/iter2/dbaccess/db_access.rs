@@ -1,5 +1,5 @@
 use super::errors::EzyTutorError;
-use crate::models::Course;
+use crate::models::course::{Course, CreateCourse};
 use sqlx::PgPool;
 
 pub async fn get_courses_for_tutor_db(
@@ -46,7 +46,7 @@ pub async fn get_course_details_db(
 
 pub async fn post_new_course_db(
     pool: &PgPool,
-    new_course: Course,
+    new_course: CreateCourse,
 ) -> Result<Course, EzyTutorError> {
     let course_row = sqlx::query!(
         "insert into ezy_course_c4 (course_id,tutor_id, course_name) values ($1,$2,$3) returning
