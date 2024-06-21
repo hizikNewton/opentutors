@@ -1,8 +1,8 @@
+use super::db_access::*;
 use super::models::*;
 use super::state::*;
-use super::db_access::*;
+use super::errors::EzyTutorError;
 use actix_web::{web, HttpResponse};
-use chrono::Utc;
 
 pub async fn health_check_handler(app_state: web::Data<AppState>) -> HttpResponse {
     let health_check_response = &app_state.health_check_response;
@@ -15,10 +15,10 @@ pub async fn health_check_handler(app_state: web::Data<AppState>) -> HttpRespons
 pub async fn post_new_course(
     new_course: web::Json<Course>,
     app_state: web::Data<AppState>,
-) -> HttpResponse {
-    println!("Received new course");
-    let course = post_new_course_db(&app_state.db, new_course.into()).await;
-    HttpResponse::Ok().json(course)
+) -> Result<HttpResponse, EzyTutorError> {
+    post_new_course_db(&app_state.db, new_course.into())
+        .await
+        .map(|course| HttpResponse::Ok().json(course))
 }
 
 pub async fn get_courses_for_tutor(
@@ -26,7 +26,9 @@ pub async fn get_courses_for_tutor(
     params: web::Path<i32>,
 ) -> HttpResponse {
     let tutor_id = params.into_inner();
-    let courses = get_courses_for_tutor_db(&app_state.db, tutor_id).await;
+    let courses = get_courses_for_tutor_db(&app_state.db, tutor_id)
+        .await
+        .unwrap();
     HttpResponse::Ok().json(courses)
 }
 
@@ -35,9 +37,8 @@ pub async fn get_course_details(
     params: web::Path<(i32, i32)>,
 ) -> HttpResponse {
     let (tutor_id, course_id) = params.into_inner();
-    let course = get_course_details_db(
-        &app_state.db, tutor_id, course_id).await;
-        HttpResponse::Ok().json(course)
+    let course = get_course_details_db(&app_state.db, tutor_id, course_id).await;
+    HttpResponse::Ok().json(course)
 }
 
 #[cfg(test)]
@@ -92,10 +93,14 @@ mod tests {
             course_id: 3,
             tutor_id: 2,
             course_name: "This is the next course".into(),
-            posted_time: Some(NaiveDate::from_ymd(2020, 9, 17).and_hms(14, 01, 11)),
+            posted_time: Some(
+                NaiveDate::from_ymd_opt(2020, 9, 17)
+                    .and_then(|x| x.and_hms_opt(14, 01, 11))
+                    .unwrap(),
+            ),
         };
         let course_param = web::Json(new_course_msg);
-        let resp = post_new_course(course_param, app_state).await;
+        let resp = post_new_course(course_param, app_state).await.unwrap();
         assert_eq!(resp.status(), StatusCode::OK);
     }
 }
