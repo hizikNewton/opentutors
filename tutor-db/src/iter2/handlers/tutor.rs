@@ -1,5 +1,6 @@
-use crate::models::tutor::{UpdateTutor,NewTutor};
+use crate::db_access::tutor::*;
 use crate::errors::EzyTutorError;
+use crate::models::tutor::{NewTutor, UpdateTutor};
 use crate::state::*;
 use actix_web::{web, HttpResponse};
 
@@ -32,7 +33,6 @@ pub async fn update_tutor_details(
     params: web::Path<i32>,
     update_tutor: web::Json<UpdateTutor>,
 ) -> Result<HttpResponse, EzyTutorError> {
-
     let tutor_id = params.into_inner();
     update_tutor_details_db(&app_state.db, tutor_id, UpdateTutor::from(update_tutor))
         .await
@@ -40,9 +40,8 @@ pub async fn update_tutor_details(
 }
 pub async fn delete_tutor(
     app_state: web::Data<AppState>,
-    params: web::Path<i32>
+    params: web::Path<i32>,
 ) -> Result<HttpResponse, EzyTutorError> {
-
     let tutor_id = params.into_inner();
     delete_tutor_db(&app_state.db, tutor_id)
         .await

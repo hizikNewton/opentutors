@@ -1,10 +1,8 @@
-use crate::db_access::*;
+use crate::db_access::course::*;
 use crate::errors::EzyTutorError;
-use crate::state::*;
 use crate::models::course::{CreateCourse, UpdateCourse};
+use crate::state::*;
 use actix_web::{web, HttpResponse};
-
-
 
 pub async fn post_new_course(
     new_course: web::Json<CreateCourse>,
@@ -55,10 +53,9 @@ pub async fn delete_course(
     path: web::Path<(i32, i32)>,
 ) -> Result<HttpResponse, EzyTutorError> {
     let (tutor_id, course_id) = path.into_inner();
-   let resp =  delete_course_db(&app_state.db, tutor_id, course_id).await?;
-   Ok(HttpResponse::Ok().json(resp))
+    let resp = delete_course_db(&app_state.db, tutor_id, course_id).await?;
+    Ok(HttpResponse::Ok().json(resp))
 }
-
 
 #[cfg(test)]
 mod tests {

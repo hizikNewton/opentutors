@@ -10,7 +10,7 @@ mod handlers;
 #[path = "../iter2/routes.rs"]
 mod routes;
 
-#[path = "../iter2/dbaccess/db_access.rs"]
+#[path = "../iter2/dbaccess/mod.rs"]
 mod db_access;
 
 #[path = "../iter2/errors.rs"]
@@ -18,6 +18,7 @@ mod errors;
 
 use actix_web::{web, App, HttpServer};
 use dotenv::dotenv;
+use errors::EzyTutorError;
 use routes::*;
 use sqlx::PgPool;
 use state::AppState;
@@ -36,6 +37,9 @@ async fn main() -> io::Result<()> {
     let app = move || {
         App::new()
             .app_data(shared_data.clone())
+            .app_data(web::JsonConfig::default().error_handler(|_err, _req| {
+                EzyTutorError::InvalidInput("Please provide valid Json input".to_string()).into()
+            }))
             .configure(general_routes)
             .configure(course_routes)
             .configure(tutor_routes)

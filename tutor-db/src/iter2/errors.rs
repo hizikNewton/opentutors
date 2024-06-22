@@ -3,14 +3,15 @@ use serde::Serialize;
 use sqlx::Error;
 use std::fmt::{self, Display};
 
-#[derive(Debug,Serialize)]
+#[derive(Debug, Serialize)]
 pub enum EzyTutorError {
     DBError(String),
     ActixError(String),
     NotFound(String),
+    InvalidInput(String),
 }
 
- #[derive(Debug,Serialize)]
+#[derive(Debug, Serialize)]
 pub struct MyErrorResponse {
     error_message: String,
 }
@@ -30,19 +31,21 @@ impl EzyTutorError {
                 println!("Not found error occurred: {:?}", msg);
                 msg.into()
             }
+            EzyTutorError::InvalidInput(msg) => {
+                println!("Invalid parameters received: {:?}", msg);
+                msg.into()
+            }
         }
     }
 }
 
- impl Display for EzyTutorError{
+impl Display for EzyTutorError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self)
-       
     }
-} 
+}
 
-
-impl From<Error> for EzyTutorError { 
+impl From<Error> for EzyTutorError {
     fn from(err: Error) -> Self {
         EzyTutorError::DBError(err.to_string())
     }
@@ -55,12 +58,13 @@ impl error::ResponseError for EzyTutorError {
                 StatusCode::INTERNAL_SERVER_ERROR
             }
             EzyTutorError::NotFound(_msg) => StatusCode::NOT_FOUND,
+            EzyTutorError::InvalidInput(_msg) => StatusCode::BAD_REQUEST,
         }
     }
 
     fn error_response(&self) -> HttpResponse {
-        HttpResponse::build(self.status_code()).json(MyErrorResponse{
-            error_message:self.error_response(),
+        HttpResponse::build(self.status_code()).json(MyErrorResponse {
+            error_message: self.error_response(),
         })
     }
 }
