@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::errors::EzyTutorError;
 
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone,sqlx::FromRow)]
 pub struct Course {
     pub course_id: i32,
     pub tutor_id: i32,

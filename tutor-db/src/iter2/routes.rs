@@ -1,4 +1,5 @@
-use crate::handlers::*;
+use crate::handlers::course::*;
+use crate::handlers::general::*;
 use actix_web::web;
 
 pub fn general_routes(cfg: &mut web::ServiceConfig) {
@@ -16,5 +17,16 @@ pub fn course_routes(cfg: &mut web::ServiceConfig) {
                 web::put().to(update_course_details),
             )
             .route("/{tutor_id}/{course_id}", web::delete().to(delete_course)),
+    );
+}
+
+pub fn tutor_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/tutors")
+            .route("/", web::post().to(post_new_tutor))
+            .route("/", web::get().to(get_all_tutors))
+            .route("/{tutor_id}", web::get().to(get_tutor_details))
+            .route("/{tutor_id}", web::put().to(update_tutor_details))
+            .route("/{tutor_id}", web::delete().to(delete_tutor)),
     );
 }
